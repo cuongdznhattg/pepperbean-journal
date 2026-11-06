@@ -1,0 +1,38 @@
+name: Build Windows portable
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Extract project
+        shell: pwsh
+        run: Expand-Archive -LiteralPath project.zip -DestinationPath app -Force
+      - name: Build and test Windows app
+        shell: pwsh
+        run: ./app/tools/build_windows.ps1
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-evidence
+          path: |
+            app/release/unit-tests.xml
+            app/release/windows-packaged-self-test.json
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Downloadable app
+        uses: actions/upload-artifact@v4
+        with:
+          name: PepperBeanJournal-Windows-x64
+          path: app/release/PepperBeanJournal-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 1
